@@ -1,9 +1,10 @@
+//#include <dummy.h>
 #include <ESP8266WiFi.h>
 //#include <WiFiUdp.h>
-#include "WebSocketClient.h"
+//#include "WebSocketClient.h"
 
 // WiFi network name
-#define WIFI_NETWORK "Gary's Hotspot"
+#define WIFI_NETWORK "ENEE408A Drone Team"
 #define CLIENT_ADDRESS "192.168.1.2"
 #define PORT 40810
 
@@ -50,5 +51,3 @@ void loop() {
 		Serial.write(ch);
 	}	
 }
-
-
