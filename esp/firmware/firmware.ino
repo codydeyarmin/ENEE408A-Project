@@ -1,53 +1,84 @@
-//#include <dummy.h>
-#include <ESP8266WiFi.h>
-//#include <WiFiUdp.h>
-//#include "WebSocketClient.h"
+/*
+ *  firmware.ino
+ *  
+ *  Firmware flashed onto an ESP32 for communication between 
+ *  UART on STM and a PC
+ */
 
-// WiFi network name
-#define WIFI_NETWORK "ENEE408A Drone Team"
-#define CLIENT_ADDRESS "192.168.1.2"
-#define PORT 40810
+#include <WiFi.h>
+#include <Esp.h>
 
-//WiFiUDP client;
+const char* ssid     = "ENEE408A Drone Team";
+const char* password = "dr0n3sAr3R3@llyC00l!";
+const char* host = "192.168.1.3";
+
 WiFiClient client;
-unsigned char seq = 0;
-char buff[100];
-byte buff_index = 0;
+const int connPort = 40810;
+String relayStr;
 
-//const char* WIFI_ADDRESS = CLIENT_ADDRESS;
-//const int VS_PORT = PORT;
-const byte FLUSH_SEQUENCE[] = {0xFF, 0xFE, 0xFD, 0xFC}; // what is this exactly??
+void setup() {
+    Serial.begin(57600);
+    delay(10);
 
-void setup() {  
-	// Begin serial communication with Arduino
-	Serial.begin(9600);
+    // We start by connecting to a WiFi network
+    Serial.print("\nConnecting to ");
+    Serial.println(ssid);
 
-	// Connect to WiFi Network
-	WiFi.begin(WIFI_NETWORK, NULL);
-	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-		ESP.restart();
-	}
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+        //WiFi.begin(ssid, password);
+    }
 
-	// Begin listening for responses on port 7755
-	client.connect(CLIENT_ADDRESS, PORT);
+    Serial.println("");
+    Serial.print("\nWiFi connected. IP address: ");
+    Serial.println(WiFi.localIP());
 }
 
 void loop() {
-	// Read in data from STM32L4A6
-	while (Serial.available() > 0) {
-	buff[buff_index++] = Serial.read();
-		if(!client.connected())
-			ESP.restart();
-	  
-		if (buff[buff_index-1] == '\n') {
-			client.write(buff, buff_index);
-			buff_index = 0; 
+    delay(500);
+
+    Serial.print("connecting to ");
+    Serial.println(host);
+
+    // Use WiFiClient class to create TCP connections
+    if (!client.connect(host, connPort)) {
+        Serial.println("connection failed");
+        return;
+    } else {
+        Serial.println("connection established");
+    }
+
+    // Keep a connection until it goes stale
+    while(keepCommunicating());    
+}
+
+void keepCommunicating() {
+    // Reading from UART, sending to TCP 40810
+    relayStr = "";
+    while (Serial.available() > 0)
+        relayStr += (char) Serial.read();
+    if (relayStr.length() > 0)
+        client.println(relayStr);
+
+    // Reading from TCP 40810, sending to UART
+    relayStr = "";
+    while (client.available())
+        relayStr += (char) client.read();
+    if (relayStr.length() > 0)
+        Serial.println(relayStr);
+
+    // TIMEOUT LOOP (10 second timeout)
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+        if (millis() - timeout > 10000) {
+            Serial.println(">>> Client Timeout !");
+            client.stop();
+            //ESP.restart();
+            return 0;
         }
-	}
-	
-	// Read everything from TCP40810 and print them to Serial
-	while (client.available()) {
-		char ch = static_cast<char>(client.read());
-		Serial.write(ch);
-	}	
+    }
+
+    return 1;
 }
