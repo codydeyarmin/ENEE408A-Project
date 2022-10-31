@@ -6,6 +6,8 @@ to a PC running a TCP server on port 40810.
 The ESP32 can communicate on any UART baud rate. I am currently finding that `115200` is too high of a 
 baud rate and tends to miss some bits. The current test setup is using `57600`.
 
+![Wire diagram of ESP32 communication setup](esp_setup.png "ESP32 Setup")
+
 ## LAN 
 We will be using a router as an access point for this communication channel as well as for the Camera on
 the drone. There isn't a need to access the internet, so no ethernet will be necessary.
@@ -49,4 +51,6 @@ You can stop holding the button when it says it's done.
 The ESP32 has a voltage regulator, taking the voltage down to 3.3V automatically, but it is suggested to directly
 apply 3.3V. I use the `3.3V` and `GND` pins for power and ground as well as `RX0` and `TX0` for receive and transmit pins. 
 
-[INSERT IMAGE HERE]
+
+
+
