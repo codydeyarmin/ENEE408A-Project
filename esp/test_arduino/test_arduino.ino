@@ -29,8 +29,8 @@ void generateTelemetry() {
 
 // RECEIVE
 int receiveData() {
-  Serial.println("idk trying to receive");
-  delay(500);
+  //Serial.println("idk trying to receive");
+  //delay(500);
   receiving = "";
   byte test[256];
   int idx = 0;
@@ -44,9 +44,9 @@ int receiveData() {
     //Serial.print(" ");
   }
 
-  delay(500);
-  Serial.println("check length");
-  delay(500);
+  //delay(500);
+  //Serial.println("check length");
+  //delay(500);
   if (receiving.length() > 0) {
     Serial.print("Received bytes: ");
     Serial.println(receiving); 
@@ -67,7 +67,7 @@ int receiveData() {
     }
   }
   
-  delay(500);
+  delay(10);
   //Serial.print((receiving != "connection established"));
   return (receiving != "connection established\r\n");
 }
@@ -79,7 +79,7 @@ void sendData() {
   //int first = 1024;
   packer.serialize(aX, aY, aZ, gX, gY, gZ);
   
-  Serial.println("Sending telemetry data: 256, ");
+  Serial.print("Sending telemetry data: ");
   Serial.print(aX);
   Serial.print(", ");
   Serial.print(aY);
@@ -92,11 +92,15 @@ void sendData() {
   Serial.print(", ");
   Serial.print(gZ);
   Serial.print(" ---- ");
-  Serial.write((char *) packer.data());
+  for(int i=0; i < packer.size(); i++) {
+    Serial.print((int) packer.data()[i], HEX);
+    Serial.print(" ");
+  }
+  //Serial.write((char *) packer.data());
   Serial.println(" ");
   
   
-  delay(500);
+  //delay(500);
   sending = "";
   //mSerial->write("Hello from Arduino Uno!!");
   mSerial.write((char *)packer.data());
@@ -108,8 +112,8 @@ void setup() {
   pinMode(tx, OUTPUT);
   
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  mSerial.begin(9600); 
+  Serial.begin(74880);
+  mSerial.begin(74880); 
   Serial.println("begin");
   //delay(500);
   //while (receiveData());
@@ -121,5 +125,6 @@ void setup() {
 void loop() {
   sendData();
   receiveData();
+  //delay(10000);
   Serial.println("end loop");
 }

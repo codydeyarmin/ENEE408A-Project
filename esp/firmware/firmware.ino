@@ -10,15 +10,15 @@
 
 const char* ssid     = "ENEE408A Drone Team";
 const char* password = "dr0n3sAr3R3@llyC00l!";
-const char* host = "192.168.1.3";
-byte flushSeq[4] = {0x34, 0x30, 0x38, 0x41  }; // 408A
+const char* host = "192.168.1.2";
+//byte flushSeq[4] = {0x34, 0x30, 0x38, 0x41}; // 408A
 
 WiFiClient client;
 const int connPort = 40810;
 String relayStr;
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(74880);
     delay(10);
 
     // We start by connecting to a WiFi network
@@ -55,9 +55,15 @@ void loop() {
 }
 
 int keepCommunicating() {
-    Serial.println("ARDUINO ----> Server");
+    //Serial.println("ARDUINO ----> Server");
     
     // Reading from UART, sending to TCP 40810
+    if (Serial.available() > 0) {
+      char c = Serial.read();
+      client.write(c);
+    }
+
+    /*
     relayStr = "";
     while (Serial.available() > 0){
         relayStr += (char) Serial.read();
@@ -74,9 +80,16 @@ int keepCommunicating() {
         Serial.println(relayStr);
         client.print(relayStr);
     }
+    */
 
-    Serial.println("Server ----> ARDUINO");
+    //Serial.println("Server ----> ARDUINO");
     // Reading from TCP 40810, sending to UART
+    if (client.available() > 0) {
+      char c = client.read();
+      Serial.write(c);
+    }
+
+    /*
     relayStr = "";
     while (client.available() > 0) { 
        relayStr += (char) client.read();
@@ -84,14 +97,15 @@ int keepCommunicating() {
     if (relayStr.length() > 0) {
         Serial.println(relayStr);
     }
+    */
 
 
-    Serial.println("... timeout loop ...");
+    //Serial.println("... timeout loop ...");
     // TIMEOUT LOOP (10 second timeout)
-    return 1;
+    //return 1;
     unsigned long timeout = millis();
-    while (client.available() == 0) {
-        if (millis() - timeout > 10000) {
+    while (!client.connected()) {
+        if (millis() - timeout > 500) {
             Serial.println(">>> Client Timeout !");
             client.stop();
             //ESP.restart();
