@@ -10,7 +10,7 @@
 
 const char* ssid     = "ENEE408A Drone Team";
 const char* password = "dr0n3sAr3R3@llyC00l!";
-const char* host = "192.168.1.2";
+const char* host = "192.168.1.3";
 //byte flushSeq[4] = {0x34, 0x30, 0x38, 0x41}; // 408A
 
 WiFiClient client;

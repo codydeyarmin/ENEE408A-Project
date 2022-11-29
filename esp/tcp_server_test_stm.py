@@ -8,7 +8,7 @@ import time
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 #srv_addr = ('172.24.44.109', 40810)
-srv_addr = ('192.168.1.2', 40810)
+srv_addr = ('192.168.1.3', 40810)
 sock.bind(srv_addr)
 sock.listen()
 

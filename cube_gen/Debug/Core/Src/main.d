@@ -27,7 +27,10 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
- ../Drivers/BSP/STM32L4xx_Nucleo_144/Inc/stm32l4xx_nucleo_144.h
+ ../Core/Inc/cwpack.h ../Core/Inc/cwpack_internals.h \
+ ../Core/Inc/cwpack_config.h \
+ ../Drivers/BSP/STM32L4xx_Nucleo_144/Inc/stm32l4xx_nucleo_144.h \
+ ../Core/Inc/LCD16x2.h
 ../Core/Inc/main.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal.h:
 ../Core/Inc/stm32l4xx_hal_conf.h:
@@ -57,4 +60,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
+../Core/Inc/cwpack.h:
+../Core/Inc/cwpack_internals.h:
+../Core/Inc/cwpack_config.h:
 ../Drivers/BSP/STM32L4xx_Nucleo_144/Inc/stm32l4xx_nucleo_144.h:
+../Core/Inc/LCD16x2.h:
