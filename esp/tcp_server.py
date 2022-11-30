@@ -8,7 +8,7 @@ import time
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 #srv_addr = ('172.24.44.109', 40810)
-srv_addr = ('192.168.1.3', 40810)
+srv_addr = ('192.168.1.2', 40810)
 sock.bind(srv_addr)
 sock.listen()
 
@@ -64,13 +64,13 @@ while True:
             
             # RECEIVE
             data += connection.recv(1024)
-            print(f'data = {data}')
+            #print(f'data = {data}')
             if len(data) > 4 and data[-4:] == b'408A':
                 data = b'\x96' + data.split(b'\x96')[-1]
                 #b, d = calcFirstByte(data[:-4])
-                print("Received data: {}".format(data))
+                #print("Received data: {}".format(data))
                 #print("unpacking {}".format(b + d))
-                print("unpacking {}".format(data[:-4]))
+                #print("unpacking {}".format(data[:-4]))
                 try:
                     unpacked = msgpack.unpackb(data[:-4], raw=False)
                     #print("Unpacked data: {}\n".format(unpacked[-6:]))
@@ -82,7 +82,7 @@ while True:
                 data = b''
                 #sendit = True
             
-            #time.sleep(1)
+            time.sleep(3)
             
         print(f'total messages received = {datacount}')
 
