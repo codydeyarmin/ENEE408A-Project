@@ -14,12 +14,24 @@ const char* host = "192.168.1.4";
 //byte flushSeq[4] = {0x34, 0x30, 0x38, 0x41}; // 408A
 
 WiFiClient client;
-const int connPort = 40810;
+const int connPort = 40812;
 String relayStr;
 
+void flashBlue(int ms, int num) {
+    for (int i=0; i < num; i++) {
+        digitalWrite(2,HIGH);
+        delay(ms);
+        digitalWrite(2,LOW);
+        delay(ms);  
+    }
+}
+
 void setup() {
+    pinMode(2,OUTPUT);
     Serial.begin(74880);
     delay(10);
+    
+    flashBlue(500, 1);
 
     // We start by connecting to a WiFi network
     Serial.print("\nConnecting to ");
@@ -34,24 +46,27 @@ void setup() {
     Serial.println("");
     Serial.print("\nWiFi connected. IP address: ");
     Serial.println(WiFi.localIP());
+    flashBlue(200, 5);
 }
 
 void loop() {
     delay(500);
+    flashBlue(100, 3);
+    //delay(50);
     Serial.print("connecting to ");
     Serial.println(host);
 
     // Use WiFiClient class to create TCP connections
     if (!client.connect(host, connPort)) {
         Serial.println("connection failed");
-        return;
+        digitalWrite(2,LOW);
     } else {
         Serial.println("connection established");
+        digitalWrite(2,HIGH);
+        // Keep a connection until it goes stale
+        while(keepCommunicating());   
+        Serial.println("loop end"); 
     }
-
-    // Keep a connection until it goes stale
-    while(keepCommunicating());   
-    Serial.println("loop end"); 
 }
 
 int keepCommunicating() {

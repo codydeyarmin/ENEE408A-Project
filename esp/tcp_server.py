@@ -6,11 +6,13 @@ import time
 
 #socket.setdefaulttimeout(2)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 #srv_addr = ('172.24.44.109', 40810)
-srv_addr = ('192.168.1.2', 40810)
-sock.bind(srv_addr)
-sock.listen()
+#srv_addr = ('192.168.1.4', 40812)
+#srv_addr = ('127.0.0.1', 40812)
+addr = ('192.168.1.3', 40810)
+#sock.bind(srv_addr)
+#sock.listen()
 
 byteseq = b'408A'
 
@@ -41,13 +43,14 @@ def calcFirstByte(data):
     return bytes([0x90 + ctr]), newdata
 
 while True:
-    print("Waiting for connection")
-    connection, client = sock.accept()
+    print("connecting to ESP32 server")
+    sock.connect(addr)
+    #connection, client = sock.accept()
     #connection.settimeout(20)
     #print(connection)
 
     try:
-        print("Connected to client IP: {}".format(client))
+        print("Connected to server")
         start = time.time()
         
         # Receive and print data 32 bytes at a time, as long as the client is sending something
@@ -58,12 +61,12 @@ while True:
             # SEND
             bites, randArr = randomizeCommands()
             print(f'\nsending data to ESP ---> {randArr}')
-            connection.sendall(bites)
+            sock.sendall(bites)
             #sendit = False
             #continue
             
             # RECEIVE
-            data += connection.recv(1024)
+            data += sock.recv(1024)
             #print(f'data = {data}')
             if len(data) > 4 and data[-4:] == b'408A':
                 data = b'\x96' + data.split(b'\x96')[-1]
@@ -82,10 +85,10 @@ while True:
                 data = b''
                 #sendit = True
             
-            time.sleep(3)
+            #time.sleep(7)
             
         print(f'total messages received = {datacount}')
 
     finally:
-        connection.close()
+        sock.close()
         print('\n')
