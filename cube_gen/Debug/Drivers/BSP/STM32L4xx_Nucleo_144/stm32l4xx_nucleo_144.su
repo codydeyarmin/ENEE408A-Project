@@ -1,0 +1,9 @@
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:156:10:BSP_GetVersion	4	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:174:6:BSP_LED_Init	48	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:201:6:BSP_LED_DeInit	40	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:221:6:BSP_LED_On	16	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:235:6:BSP_LED_Off	16	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:249:6:BSP_LED_Toggle	16	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:273:6:BSP_PB_Init	40	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:310:6:BSP_PB_DeInit	40	static
+../Drivers/BSP/STM32L4xx_Nucleo_144/stm32l4xx_nucleo_144.c:325:10:BSP_PB_GetState	16	static
