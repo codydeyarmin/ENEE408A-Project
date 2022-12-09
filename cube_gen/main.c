@@ -28,7 +28,7 @@
 /* Private variables ---------------------------------------------------------*/
 __IO ITStatus UartReadyRX = SET;
 __IO ITStatus UartReadyTX = RESET;
-__IO ITStatus UartReady = RESET;
+__IO ITStatus UartReady = SET;
 UART_HandleTypeDef huart4;
 DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
@@ -37,16 +37,15 @@ DMA_HandleTypeDef hdma_uart4_tx;
 /* Buffer used for transmission */
 uint8_t aTxStartMessage[] = "\n\rGary is really cool\n\r408A";
 uint8_t flushSequence[] = "408A";
-int commands[NUMCOMMANDS];
+int newCommands[NUMCOMMANDS];
 int errorType = -1;
-int txCount = 0, rxCount = 0, msgPackErrCnt = 0;
+int txWaitCount = 0, rxWaitCount = 0;
 
 /* Buffer used for reception */
 #define TIMEOUT                           5
 #define RXBUFFERSIZE                      30
 #define TXBUFFERSIZE                      30
 #define UNPACKSIZE                        30
-
 uint8_t aRxBuffer[RXBUFFERSIZE];
 uint8_t aTxBuffer[TXBUFFERSIZE];
 uint8_t unpackBuffer[RXBUFFERSIZE];
@@ -63,7 +62,7 @@ cw_unpack_context uc;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_UART4_Init(void);
+static void MX_USART1_UART_Init(void);
 
 
 /**
@@ -84,8 +83,8 @@ int main(void) {
 	BSP_LED_Init(LED3); // GREEN LED
 
 	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_DMA_Init();
+	//MX_GPIO_Init();
+	//MX_DMA_Init();
 	MX_UART4_Init();
 
 	/* Initialize LCD screen */
@@ -99,32 +98,19 @@ int main(void) {
 	/* MAIN CONTROL LOOP FOR COMMUNICATION */
 	pack_telemetry();
 	while (1) {
-		errorType = 0;
-		BSP_LED_On(LED1);
-		BSP_LED_Off(LED2); // LED OFF
+		//BSP_LED_Off(LED2); // LED OFF
 
 		// SEND TELEMETRY DATA
+		//pack_telemetry();
 		send_telemetry();
 
-		BSP_LED_On(LED2); // LED ON
-		BSP_LED_Off(LED1);
+		//BSP_LED_On(LED2); // LED ON
 
 		// RECEIVE DATA (if any)
-		HAL_Delay(80);
 		receive_commands();
-		do_something_with_commands();
+		do_something_with_commands(newCommands);
 
-		if ((int) *aRxBuffer != 0x96 || (((int) *aRxBuffer == 0x96) && ((int) *(aRxBuffer+1) == 0x96))) {
-			strncpy(unpackBuffer, aRxBuffer+1, UNPACKSIZE-1);
-		} else {
-			strncpy(unpackBuffer, aRxBuffer, UNPACKSIZE);
-		}
-
-		unpack_commands();
-		if (errorType != 1) {
-			display_data_on_lcd();
-		}
-		memset(aRxBuffer, 0, RXBUFFERSIZE);
+		//send_telemetry();
 	}
 }
 
@@ -150,12 +136,17 @@ void pack_telemetry() {
 }
 
 /* Unpack data received ---> integer array*/
+//void unpack_commands(uint8_t * recvBuffer) {
 void unpack_commands() {
-	int * ptr = commands;
+	// TODO - need to decide what the format of this stuff is
+	//int receivedData[5]; // Controls: pitch, yaw, roll --- Gimble: left/right, up/down
+	int * ptr = newCommands;
 	int numItems = 0;
-	cw_unpack_context_init(&uc, (char *) unpackBuffer, UNPACKSIZE, 0);
+	//cw_unpack_context uc;
+	cw_unpack_context_init(&uc, (char *) unpackBuffer, sizeof(unpackBuffer), 0);
 	cw_unpack_next(&uc); // get array length
 	numItems = uc.item.as.i64;
+	//newCommands = uc.item.as.array;
 	for (int i = 0; i < numItems; i++) {
 		cw_unpack_next(&uc);
 		if (uc.item.type == CWP_ITEM_POSITIVE_INTEGER) {
@@ -164,7 +155,7 @@ void unpack_commands() {
 			*(ptr++) = uc.item.as.i64;
 		} else {
 			errorType = 1;
-			msgPackErrCnt++;
+			// TODO - figure out what exactly is breaking here
 			break;
 			//Error_Handler(); // error if not pos/neg integer
 		}
@@ -173,6 +164,7 @@ void unpack_commands() {
 			cw_unpack_next(&uc);
 		}
 	}
+	//return receivedData;
 }
 
 /* USART-TX: Send the packed telemetry */
@@ -180,68 +172,84 @@ void send_telemetry() {
 	// Wait for current peripheral process to finish
 	//while (HAL_UART_GetState(&huart4) != HAL_UART_STATE_READY);
 
-	// send that shit
-	BSP_LED_On(LED2);
-	if(HAL_UART_Transmit_DMA(&huart4, (uint8_t*) aTxBuffer, TXBUFFERSIZE) != HAL_OK) {
+	if(HAL_UART_Transmit_DMA(&huart4, (uint8_t*) aTxBuffer, pc.end - pc.start +4) != HAL_OK) {
 		errorType = 2;
+		return;
 		Error_Handler(); /* Transfer error in transmission process */
 	}
 
 	// Wait for current peripheral process to finish
-	//while (HAL_UART_GetState(&huart1) != HAL_UART_STATE_READY);
+	//while (HAL_UART_GetState(&huart4) != HAL_UART_STATE_READY);
 	while(UartReadyTX != SET);
+	txWaitCount++;
 	UartReadyTX = RESET;
-	txCount++;
 }
 
 /* USART-RX: Receive any incoming commands */
 void receive_commands() {
-	// Wait for current peripheral process to finish
-	while (UartReadyRX != SET);
-	UartReadyRX = RESET;
+	int offset = 0, nextOffset = 0;
+	uint8_t *rxPtr = aRxBuffer;
 
-	BSP_LED_Off(LED3);
-	if (HAL_UART_Receive_DMA(&huart4, (uint8_t *) aRxBuffer, RXBUFFERSIZE) != HAL_OK) {
-		errorType = 3;
-		return;
-		//Error_Handler(); /* Transfer error in reception process */
+	if (strlen((char *) aRxBuffer) > 4) {
+//		if (((int) *(aRxBuffer)) == 0x96 && ((int) *(aRxBuffer+1)) == 0x96) {
+//			++offset;
+//		}
+//		while (((int) *(aRxBuffer + offset)) != 0x96) {
+//			++offset;
+//		}
+		strncpy(unpackBuffer, aRxBuffer, UNPACKSIZE);
+		*(unpackBuffer+RXBUFFERSIZE) = 0;
+		unpack_commands();
+		display_data_on_lcd();
+	} else if (strlen((char *) aRxBuffer+1) > 4) {
+		strncpy(unpackBuffer, aRxBuffer+1, UNPACKSIZE-1);
+		unpack_commands();
+		display_data_on_lcd();
+	} else {
+		HAL_UART_AbortReceive(&huart4);
 	}
-	rxCount++;
+
+	// Wait for current peripheral process to finish
+	memset(aRxBuffer, 0, RXBUFFERSIZE);
+	if (HAL_UART_Receive_DMA(&huart4, (uint8_t *) aRxBuffer, RXBUFFERSIZE) != HAL_OK) {
+		errorType = 24;
+		//return;
+		//Error_Handler(); /* Transfer error in reception process */
+		HAL_UART_AbortReceive(&huart4);
+	}
 }
 
 void display_data_on_lcd() {
 	char lcd_buf[5];
 
-	// turn commands into string - commands
+	// TODO - turn commands into string - newCommands
 	LCD_Init();
 	LCD_Clear();
 
 	LCD_Set_Cursor(1, 1);
-	//LCD_Write_String("Gx: ");
-	sprintf(lcd_buf, "%d", commands[0]);
+	LCD_Write_String("Gx: ");
+	sprintf(lcd_buf, "%d", newCommands[0]);
 	LCD_Write_String(lcd_buf);
 
-	LCD_Set_Cursor(1, 6);
-	//LCD_Write_String("Gy: ");
-	sprintf(lcd_buf, "%d", commands[1]);
-	LCD_Write_String(lcd_buf);
-	LCD_Set_Cursor(1, 11);
-	sprintf(lcd_buf, "%d", commands[2]);
+	LCD_Set_Cursor(1, 10);
+	LCD_Write_String("Gy: ");
+	sprintf(lcd_buf, "%d", newCommands[1]);
 	LCD_Write_String(lcd_buf);
 
 	LCD_Set_Cursor(2, 1);
-	sprintf(lcd_buf, "%d", commands[3]);
+	sprintf(lcd_buf, "%d", newCommands[2]);
 	LCD_Write_String(lcd_buf);
-	LCD_Set_Cursor(2, 6);
-	sprintf(lcd_buf, "%d", commands[4]);
+	LCD_Set_Cursor(2, 7);
+	//LCD_Write_String(" ");
+	sprintf(lcd_buf, "%d", newCommands[3]);
 	LCD_Write_String(lcd_buf);
-	LCD_Set_Cursor(2, 11);
-	sprintf(lcd_buf, "%d", commands[5]);
+	LCD_Set_Cursor(2, 13);
+	//LCD_Write_String(" ");
+	sprintf(lcd_buf, "%d", newCommands[4]);
 	LCD_Write_String(lcd_buf);
-
 }
 
-void do_something_with_commands() {
+void do_something_with_commands(int * commands) {
 	// for @codydeyarmin to implement for drone control
 	// for @VRteam and @Akiva to implement for gimble control
 }
@@ -250,7 +258,8 @@ void do_something_with_commands() {
   * @brief System Clock Configuration
   * @retval None
   */
-void SystemClock_Config(void) {
+void SystemClock_Config(void)
+{
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
@@ -283,7 +292,8 @@ void SystemClock_Config(void) {
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
     Error_Handler();
   }
 }
@@ -296,8 +306,10 @@ void SystemClock_Config(void) {
   * @retval None
   */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle) {
+  /* Set transmission flag: transfer complete*/
 	UartReadyTX = SET;
-	BSP_LED_On(LED3);
+  /* Turn LED1 on: Transfer in transmission process is correct */
+  //BSP_LED_On(LED2);
 }
 
 /**
@@ -308,15 +320,16 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle) {
   * @retval None
   */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle) {
+  /* Set transmission flag: transfer complete*/
 	UartReadyRX = SET;
-	BSP_LED_On(LED3);
-}
 
+  /* Turn LED1 on: Transfer in reception process is correct */
+  //BSP_LED_On(LED3);
+}
 
 static void MX_UART4_Init(void) {
   huart4.Instance = UART4;
   huart4.Init.BaudRate = 115200;
-  //huart4.Init.BaudRate = 250000;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
   huart4.Init.StopBits = UART_STOPBITS_1;
   huart4.Init.Parity = UART_PARITY_NONE;

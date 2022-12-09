@@ -36,14 +36,13 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 
-
 /* Function Prototypes */
 void Error_Handler(void);
 void pack_telemetry();
 void unpack_commands();
 void send_telemetry();
 void receive_commands();
-void do_something_with_commands();
+void do_something_with_commands(int *);
 void display_data_on_lcd();
 
 
