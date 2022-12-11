@@ -174,7 +174,7 @@ public class client : MonoBehaviour
 					205, rotation_bytes[0], rotation_bytes[1], // yaw
 					52, 48, 56, 65, // 0x4, 0x0, 0x8, 0xA
 					1, 1, 1, 1, 1, 1, 1 // pad with 0x91
-                    }; // TODO <---------------------------------------------------------------------------------------------
+                    };
 				writeSocket(data);
 			}
 
